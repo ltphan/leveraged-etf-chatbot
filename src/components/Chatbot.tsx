@@ -1,37 +1,11 @@
-import { useState, type FormEvent } from "react";
-import { v4 as uuidv4 } from "uuid";
-
-type Message = {
-  id: string;
-  type: string;
-  content: FormDataEntryValue | null;
-};
+import { useChat } from "@ai-sdk/react";
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { messages, input, handleInputChange, status, handleSubmit } = useChat({
+    api: "/api/chat",
+  });
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    const messageContent = formData.get("postContent");
-    const messageType = "user";
-    const messageId = uuidv4();
-    const userMessage: Message = {
-      id: messageId,
-      type: messageType,
-      content: messageContent,
-    };
-    setMessages((prevMessages) => {
-      return [...prevMessages, userMessage].filter(
-        (message) => message.content !== null
-      );
-    });
-
-    e.currentTarget.reset();
-    setIsSubmitting(false);
-  };
+  const isSubmitting = status !== "ready";
 
   return (
     <div className="w-full h-svh bg-green-100 p-10">
@@ -49,6 +23,9 @@ const Chatbot = () => {
             className="h-28 p-2 resize-none focus:outline-none w-full"
             maxLength={200000}
             placeholder="How can I help?"
+            value={input}
+            onChange={handleInputChange}
+            disabled={isSubmitting}
           />
 
           <div className="flex justify-between items-center p-2">
