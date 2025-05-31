@@ -14,8 +14,6 @@ const Chatbot = () => {
 
   const isSubmitting = status !== "ready";
 
-  console.log({ messages });
-
   return (
     <div className="w-full h-svh bg-green-100 p-10">
       <div className="h-full bg-green-200 flex flex-col gap-3.5 overflow">
