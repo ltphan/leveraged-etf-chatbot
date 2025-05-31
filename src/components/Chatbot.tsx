@@ -1,16 +1,30 @@
 import { useChat } from "@ai-sdk/react";
+import { useEffect } from "react";
+
+// TODO: save after user stops typing after X amounts of seconds? (debounce)
 
 const Chatbot = () => {
-  const { messages, input, handleInputChange, status, handleSubmit, error } =
-    useChat({
-      api: "/api/chat",
-      onError: (error) => {
-        console.log("useChat error:", error);
-      },
-      onFinish: (message) => {
-        console.log("Chat finished:", message);
-      },
-    });
+  const cachedContent = localStorage.getItem("content");
+  console.log({ cachedContent });
+
+  const { messages, input, handleInputChange, status, handleSubmit } = useChat({
+    initialMessages: cachedContent ? JSON.parse(cachedContent) : [],
+    api: "/api/chat",
+    onError: (error) => {
+      console.log("useChat error:", error);
+    },
+    onFinish: (message) => {
+      console.log("Chat finished:", message);
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      // cons of this is if AI responds and user navigatse away from page which will lose information
+      // think about using browser api of beforeunload
+      localStorage.setItem("content", JSON.stringify(messages));
+    };
+  }, [messages]);
 
   const isSubmitting = status !== "ready";
 
