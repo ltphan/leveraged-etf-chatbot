@@ -14,11 +14,20 @@ const Chatbot = () => {
 
   const isSubmitting = status !== "ready";
 
+  console.log({ messages });
+
   return (
     <div className="w-full h-svh bg-green-100 p-10">
       <div className="h-full bg-green-200 flex flex-col gap-3.5 overflow">
         {messages.map((message) => (
-          <div className="p-2 border border-purple-500" key={message.id}>
+          <div
+            className={`p-2 border ${
+              message.role === "assistant"
+                ? "border-red-500"
+                : "border-purple-500"
+            }`}
+            key={message.id}
+          >
             {message.content as string}
           </div>
         ))}
