@@ -1,9 +1,16 @@
 import { useChat } from "@ai-sdk/react";
 
 const Chatbot = () => {
-  const { messages, input, handleInputChange, status, handleSubmit } = useChat({
-    api: "/api/chat",
-  });
+  const { messages, input, handleInputChange, status, handleSubmit, error } =
+    useChat({
+      api: "/api/chat",
+      onError: (error) => {
+        console.log("useChat error:", error);
+      },
+      onFinish: (message) => {
+        console.log("Chat finished:", message);
+      },
+    });
 
   const isSubmitting = status !== "ready";
 
@@ -17,7 +24,7 @@ const Chatbot = () => {
         ))}
       </div>
       <div className="flex flex-col m-3.5 gap-3.5 mx-2 md:mx-0">
-        <form method="post" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <textarea
             name="postContent"
             className="h-28 p-2 resize-none focus:outline-none w-full"
