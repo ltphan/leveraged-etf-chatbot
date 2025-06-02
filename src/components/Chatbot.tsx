@@ -1,54 +1,97 @@
 import { useState, type FormEvent } from "react";
+import { throttle } from "../helpers/helpers";
+import { useChat } from "../hooks/useChat";
 import { v4 as uuidv4 } from "uuid";
+import { client } from "../api/chat";
 
 type Message = {
   id: string;
   type: string;
-  content: FormDataEntryValue | null;
+  content: string;
 };
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // TODO: access localStorage cache value
+  // const { input, setInput, isSubmitting, messages, handleSubmit } = useChat();
+
+  // const handleSubmitThrottle = throttle(handleSubmit, 3000);
+
+  const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    const messageContent = formData.get("postContent");
-    const messageType = "user";
-    const messageId = uuidv4();
-    const userMessage: Message = {
-      id: messageId,
-      type: messageType,
-      content: messageContent,
-    };
-    setMessages((prevMessages) => {
-      return [...prevMessages, userMessage].filter(
-        (message) => message.content !== null
-      );
-    });
+  const postChat = async (value: string) => {
+    console.log("postChat called with:", value, "at:", Date.now());
+    let aiMessage: Message | undefined = undefined;
+    try {
+      const completion = await client.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: value }],
+      });
 
-    e.currentTarget.reset();
-    setIsSubmitting(false);
+      aiMessage = {
+        id: uuidv4(),
+        type: "assistant",
+        content: completion.choices[0]?.message?.content || "No response",
+      };
+
+      return aiMessage;
+    } catch (e) {
+      console.log("ERROR", e);
+    }
   };
 
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    console.log("handleSubmit called at:", Date.now());
+    e.preventDefault();
+    if (!input.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const userMessage: Message = {
+      id: uuidv4(),
+      type: "user",
+      content: input,
+    };
+
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    console.log("user message put in state", messages);
+    const currentInput = input;
+    setInput("");
+    // TODO: debounce or throttle
+
+    const aiResult = await postChat(currentInput);
+
+    setMessages((prevMessages) => {
+      const clonedMessages = [...prevMessages];
+      if (aiResult) {
+        return [...clonedMessages, aiResult];
+      }
+      return clonedMessages;
+    });
+
+    setIsSubmitting(false);
+  };
   return (
     <div className="w-full h-svh bg-green-100 p-10">
       <div className="h-full bg-green-200 flex flex-col gap-3.5 overflow">
         {messages.map((message) => (
           <div className="p-2 border border-purple-500" key={message.id}>
-            {message.content as string}
+            {message.content}
           </div>
         ))}
       </div>
       <div className="flex flex-col m-3.5 gap-3.5 mx-2 md:mx-0">
-        <form method="post" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <textarea
             name="postContent"
             className="h-28 p-2 resize-none focus:outline-none w-full"
             maxLength={200000}
             placeholder="How can I help?"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
           />
 
           <div className="flex justify-between items-center p-2">
